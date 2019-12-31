@@ -1,0 +1,23 @@
+
+base_dir: "/etc/pki/tls/"
+cert_dir: "/etc/pki/tls/certs"
+key_dir: "/etc/pki/tls/private"
+
+ssl_csr: "{{ key_dir }}/open-ondemand.csr"
+ssl_cert_key: "{{ key_dir }}/open-ondemand.pem"
+ssl_cert: "{{ cert_dir }}/open-ondemand.crt"
+
+basic_user: jeff
+
+
+httpd_dir: /opt/rh/httpd24/root/var/www/html
+
+web_root_arg: "--webroot -w {{ httpd_dir }}"
+email_tos_arg: "-m {{ letsencrypt_email }} --agree-tos"
+google_creds: "/tmp/google.json"
+google_dns_creds: "--dns-google-credentials {{ google_creds }}"
+google_arg: "--dns-google {{ google_dns_creds }} --dns-google-propagation-seconds 120"
+cert_bot_args: "certonly -n {{ google_arg }} {{ email_tos_arg }} -d {{ servername }}"
+
+gke_scopes:
+- 'https://www.googleapis.com/auth/cloud-platform'

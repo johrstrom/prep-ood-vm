@@ -1,0 +1,20 @@
+---
+- name: yum installs
+  yum:
+    name: "{{ item }}"
+    state: latest
+  loop:
+  - python2-pip
+  - kubectl
+  
+- name: pip installs
+  pip:
+    name: "{{ item }}"
+    state: latest
+  loop:
+  - "netaddr"
+  - "certbot"
+  - "enum"
+  - "cffi"
+  - "certbot-dns-google"
+  - ""

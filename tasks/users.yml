@@ -1,0 +1,78 @@
+- name: "create group gcloud"
+  group:
+    name: "gcloud"
+    state: present
+  become: true
+
+- name: "create users"
+  user:
+    name: "{{ item }}"
+    comment: A gcloud enabled user
+    group: "gcloud"
+  loop: "{{ users }}"
+  become: true
+
+- name: create the ood-k8s user role
+  gcp_iam_role:
+    name: "ood.k8s.user"
+    title: 'ood k8s User'
+    description: 'A simple/minimal Kubernetes user'
+    project: "{{ gcp_project }}"
+    included_permissions:
+    - container.clusters.get
+    state: present
+  delegate_to: localhost
+
+  # only piece of automation is missing here, to tie the role created 
+  # above to the service accounts created below
+
+- name: create service accounts
+  gcp_iam_service_account:
+    name: "gke-sa-{{ item }}@{{ gcp_project }}.iam.gserviceaccount.com"
+    display_name: "{{ item }}" # hacking display name to drop the file into users' home
+    project: "{{ gcp_project }}"
+    state: present
+    scopes: "{{ gke_scopes }}"
+  loop: "{{ users }}"
+  delegate_to: localhost
+  register: service_accounts
+    
+ # TODO: need to figure out way to only create the keys if 
+ # they don't already exists. This creates and overwrites every time
+- name: create a service account key
+  gcp_iam_service_account_key:
+    service_account: "{{ item }}"
+    private_key_type: TYPE_GOOGLE_CREDENTIALS_FILE
+    path: "{{ item.displayName }}.json"
+    project: "{{ gcp_project }}"
+    state: present
+  loop: "{{ service_accounts.results }}"
+  delegate_to: localhost
+
+# have to redo service accounts' display name
+- name: redo service accounts' display name
+  gcp_iam_service_account:
+    name: "{{ sa_prefix }}-{{ item }}@{{ gcp_sa_acct }}"
+    display_name: "{{ item }}'s gke service account"
+    project: "{{ gcp_project }}"
+    state: present
+    scopes: "{{ gke_scopes }}"
+  loop: "{{ users }}"
+  delegate_to: localhost
+
+- name: move gke-creds files
+  copy:
+    src: "{{ item }}.json"
+    dest: "/home/{{ item }}/.gke-creds.json"
+    owner: "{{ item }}"
+    group: "gcloud"
+    mode: '0600'
+  loop: "{{ users }}"
+  become: true
+
+- name: remove local gke-creds files
+  file:
+    path: "{{ item }}.json"
+    state: absent
+  loop: "{{ users }}"
+  delegate_to: localhost

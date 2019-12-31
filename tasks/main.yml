@@ -1,0 +1,14 @@
+- include: install.yml
+  become: true
+  tags: [ 'install' ]
+
+- include: misc.yml
+  become: true
+  tags: [ 'install' ]
+
+- include: ssl.yml
+  become: true
+  tags: [ 'install', 'ssl' ]
+
+- include: users.yml
+  tags: [ 'configure' ]

@@ -1,0 +1,22 @@
+---
+- name: copy ci creds over to the machine
+  copy:
+    src: "{{ service_account_file }}"
+    dest: "{{ google_creds }}"
+    mode: '0400'
+
+- name: generate certificate
+  shell: "certbot {{ cert_bot_args }}"
+  args:
+    creates: /etc/letsencrypt/live/{{ servername }}
+
+- name: remove ci creds from machine
+  file:
+    path: "{{ google_creds }}"
+    state: absent
+
+- name: set ssl facts
+  set_fact:
+    ssl_csr: "{{ ssl_csr }}"
+    ssl_cert: "{{ ssl_cert }}"
+    ssl_cert_key: "{{ ssl_cert_key }}"
